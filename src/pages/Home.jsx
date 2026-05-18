@@ -54,7 +54,9 @@ export default function Home({ onNavigate }) {
           </a>
         </div>
         <div className="order-2 md:order-3 flex justify-end md:flex-1">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 md:px-7 md:py-2.5 rounded-full font-bold transition-colors text-sm md:text-base shadow-sm">Masuk</button>
+          <button 
+            onClick={() => onNavigate('register')}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 md:px-7 md:py-2.5 rounded-full font-bold transition-colors text-sm md:text-base shadow-sm">Masuk</button>
         </div>
         <nav className="order-3 md:order-2 w-full md:w-auto mt-2 md:mt-0 flex justify-evenly md:justify-center gap-2 md:gap-16 lg:gap-24 font-medium text-gray-500">
           <a href="#area-pencarian" onClick={scrollToSearch} className="flex flex-col items-center hover:text-blue-600 group cursor-pointer"><img src={IconCari} className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100" /><span className="mt-1 text-xs md:text-sm">Cari Kos</span></a>

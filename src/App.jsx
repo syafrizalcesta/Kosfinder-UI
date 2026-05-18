@@ -5,6 +5,7 @@ import DetailKosMelati from './pages/DetailKosMelati';
 import DetailKosPriaModern from './pages/DetailKosPriaModern';
 import DetailKosExclusiveGebang from './pages/DetailKosExclusiveGebang';
 import DetailKosPriaStayvie from './pages/DetailKosPriaStayvie';
+import RegisterSelect from './pages/RegisterSelect';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -43,6 +44,7 @@ export default function App() {
       case 'detail-2': return <DetailKosPriaModern onNavigateBack={() => navigateTo('home')} />;
       case 'detail-3': return <DetailKosExclusiveGebang onNavigateBack={() => navigateTo('home')} />;
       case 'detail-4': return <DetailKosPriaStayvie onNavigateBack={() => navigateTo('home')} />;
+      case 'detail-register': return <RegisterSelect onNavigateBack={() => navigateTo('home')} />;
       default: return <Home onNavigate={(id) => navigateTo(`detail-${id}`)} />;
     }
   };
