@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import LogoKosfinder from '../assets/Logo-Kosfinder.svg';
 import BgHero from '../assets/landing kosfinder 1.svg'; 
 import IconCari from '../assets/material-symbols-light_search.svg';
@@ -21,12 +21,15 @@ export default function Home({ onNavigate }) {
   const listFasilitas = ['Wifi', 'AC', 'Kipas', 'Parkir Mobil', 'Kamar Mandi Dalam', 'Include Listrik', 'Dapur', 'Laundry'];
   const listPeraturan = ['Dilarang merokok', 'Terdapat jam malam', 'Dilarang membawa lawan jenis', 'Dilarang membawa peliharaan', 'Tamu dilarang menginap'];
 
-  const dummyKos = [
-    { id: 1, name: "Kos Melati Wanita Residence", type: "Wanita", location: "Jl. Raya Kampus ITS, Sukolilo, Surabaya Timur", rating: "5.0 (1)", facilities: ["WiFi", "AC", "Parkir Motor"], price: "1.200.000", image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800" },
-    { id: 2, name: "Kos Pria Modern Living", type: "Pria", location: "Jl. Keputih, Sukolilo, Surabaya Timur", rating: "4.8 (12)", facilities: ["WiFi", "AC", "Parkir Motor"], price: "980.000", image: "https://images.unsplash.com/photo-1505693314120-0d443867891c?w=800" },
-    { id: 3, name: "Kos Exclusive Gebang", type: "Wanita", location: "Jl. Gebang, Sukolilo, Surabaya Timur", rating: "4.9 (24)", facilities: ["WiFi", "AC", "Parkir Motor"], price: "1.500.000", image: "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=800" },
-    { id: 4, name: "Kos Pria Stayvie", type: "Pria", location: "Jl. Bhaskara Sari, Mulyosari, Surabaya Timur", rating: "4.2 (5)", facilities: ["WiFi", "AC", "Parkir Motor"], price: "2.500.000", image: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800" }
-  ];
+  const [kosList, setKosList] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // const dummyKos = [
+  //   { id: 1, name: "Kos Melati Wanita Residence", type: "Wanita", location: "Jl. Raya Kampus ITS, Sukolilo, Surabaya Timur", rating: "5.0 (1)", facilities: ["WiFi", "AC", "Parkir Motor"], price: "1.200.000", image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800" },
+  //   { id: 2, name: "Kos Pria Modern Living", type: "Pria", location: "Jl. Keputih, Sukolilo, Surabaya Timur", rating: "4.8 (12)", facilities: ["WiFi", "AC", "Parkir Motor"], price: "980.000", image: "https://images.unsplash.com/photo-1505693314120-0d443867891c?w=800" },
+  //   { id: 3, name: "Kos Exclusive Gebang", type: "Wanita", location: "Jl. Gebang, Sukolilo, Surabaya Timur", rating: "4.9 (24)", facilities: ["WiFi", "AC", "Parkir Motor"], price: "1.500.000", image: "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=800" },
+  //   { id: 4, name: "Kos Pria Stayvie", type: "Pria", location: "Jl. Bhaskara Sari, Mulyosari, Surabaya Timur", rating: "4.2 (5)", facilities: ["WiFi", "AC", "Parkir Motor"], price: "2.500.000", image: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800" }
+  // ];
 
   const toggleDropdown = (name) => setOpenDropdown(openDropdown === name ? null : name);
   const toggleGender = (item) => setGenders(prev => prev.includes(item) ? prev.filter(g => g !== item) : [...prev, item]);
@@ -44,6 +47,21 @@ export default function Home({ onNavigate }) {
     const target = document.getElementById('area-pencarian');
     if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
+
+  useEffect(() => {
+      fetch('http://127.0.0.1:8000/api/kos')
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            setKosList(data.data);
+          }
+          setIsLoading(false);
+        })
+        .catch((error) => {
+          console.error("Gagal mengambil data:", error);
+          setIsLoading(false);
+        });
+    }, []);
 
   return (
     <div className="min-h-screen bg-[#F5F5F5] flex flex-col">
@@ -154,36 +172,76 @@ export default function Home({ onNavigate }) {
         {/* KOS POPULER GRID */}
         <section className="w-full max-w-6xl mx-auto px-4 md:px-8 mt-12 mb-20">
           <h2 className="text-2xl font-extrabold text-gray-900 mb-6">Kos Populer</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {dummyKos.map((kos) => (
-              <div key={kos.id} onClick={() => onNavigate(kos.id)} className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer">
-                <div className="w-full h-56 md:h-64 overflow-hidden relative"><img src={kos.image} alt={kos.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /></div>
-                <div className="p-5 flex flex-col gap-3">
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-bold text-lg text-gray-900 leading-tight">{kos.name}</h3>
-                      <span className="border border-blue-400 text-blue-600 px-3 py-0.5 rounded-full text-[11px] font-semibold">{kos.type}</span>
+          
+          {isLoading ? (
+            <div className="flex justify-center items-center h-40">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+              <span className="ml-3 text-gray-500 font-medium">Memuat data kos...</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {kosList.map((kos) => (
+                <div 
+                  key={kos.kos_id} 
+                  onClick={() => onNavigate(kos.kos_id)} 
+                  className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer"
+                >
+                  <div className="w-full h-56 md:h-64 overflow-hidden relative">
+                    {/* Menggunakan placeholder image karena tabel kos_images belum di-seed */}
+                    <img 
+                      src={kos.image_url} 
+                      alt={kos.kos_name} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                    />
+                  </div>
+                  <div className="p-5 flex flex-col gap-3">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Menggunakan kos_name dari DB */}
+                        <h3 className="font-bold text-lg text-gray-900 leading-tight">{kos.kos_name}</h3>
+                        {/* Menggunakan gender_type dari DB */}
+                        <span className="border border-blue-400 text-blue-600 px-3 py-0.5 rounded-full text-[11px] font-semibold">
+                          {kos.gender_type}
+                        </span>
+                      </div>
+                      <svg className="w-5 h-5 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                      </svg>
                     </div>
-                    <svg className="w-5 h-5 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    <div className="flex items-start gap-1.5 text-gray-500 text-xs font-medium">
+                      <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                      </svg>
+                      {/* Menggunakan address dan city dari DB */}
+                      <span>{kos.address}, {kos.city}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
+                      <svg className="w-4 h-4 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                      </svg>
+                      {/* Hardcode rating sementara untuk demo */}
+                      <span>4.8</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {/* Hardcode fasilitas sementara untuk demo */}
+                      {['WiFi', 'AC', 'Kamar Mandi Dalam'].map((fasilitas, index) => (
+                        <span key={index} className="bg-gray-200 text-gray-600 text-[10px] px-2.5 py-1 rounded-full font-semibold">
+                          {fasilitas}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-sm text-gray-500">
+                      {/* Format harga menjadi Rupiah */}
+                      <span className="text-blue-600 font-extrabold text-lg mr-1">
+                        Rp {Number(kos.price).toLocaleString('id-ID')}
+                      </span>
+                      /bulan
+                    </p>
                   </div>
-                  <div className="flex items-start gap-1.5 text-gray-500 text-xs font-medium">
-                    <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    <span>{kos.location}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
-                    <svg className="w-4 h-4 text-orange-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
-                    <span>{kos.rating}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {kos.facilities.map((fasilitas, index) => (
-                      <span key={index} className="bg-gray-200 text-gray-600 text-[10px] px-2.5 py-1 rounded-full font-semibold">{fasilitas}</span>
-                    ))}
-                  </div>
-                  <p className="mt-2 text-sm text-gray-500"><span className="text-blue-600 font-extrabold text-lg mr-1">Rp {kos.price}</span>/bulan</p>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
       </main>
     </div>
