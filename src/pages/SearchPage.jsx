@@ -4,6 +4,7 @@ import IconCari from '../assets/material-symbols-light_search.svg';
 import IconWishlist from '../assets/tdesign_heart.svg';
 import IconProfil from '../assets/iconamoon_profile-light.svg';
 import IconSetting from '../assets/mdi-light_settings.svg';
+import IconBeranda from '../assets/Icon-Beranda.svg';
 
 export default function SearchPage({ initialParams, onNavigate, onNavigateBack }) {
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -41,10 +42,31 @@ export default function SearchPage({ initialParams, onNavigate, onNavigateBack }
           </a>
         </div>
         <nav className="hidden md:flex gap-12 font-medium text-gray-500">
-           <button className="flex flex-col items-center text-blue-600"><img src={IconCari} className="w-6 h-6 opacity-100" /><span>Cari</span></button>
-           <button className="flex flex-col items-center hover:text-blue-600"><img src={IconWishlist} className="w-6 h-6 opacity-70" /><span>Wishlist</span></button>
-           <button className="flex flex-col items-center hover:text-blue-600"><img src={IconProfil} className="w-6 h-6 opacity-70" /><span>Profil</span></button>
-           <button className="flex flex-col items-center hover:text-blue-600"><img src={IconSetting} className="w-6 h-6 opacity-70" /><span>Setting</span></button>
+          <button onClick={() => onNavigateBack()} className="flex flex-col items-center hover:text-blue-600 transition-colors">
+            <img src={IconBeranda} className="w-6 h-6 opacity-70" alt="Beranda" />
+            <span>Beranda</span>
+          </button>
+          
+          <button className="flex flex-col items-center text-blue-600">
+            <img src={IconCari} className="w-6 h-6 opacity-100" />
+            <span>Cari</span>
+          </button>
+          
+          {/* SINKRONISASI TOMBOL WISHLIST KAN ALUR NAVIGASINYA */}
+          <button onClick={() => onNavigate('wishlist')} className="flex flex-col items-center hover:text-blue-600">
+            <img src={IconWishlist} className="w-6 h-6 opacity-70" />
+            <span>Wishlist</span>
+          </button>
+          
+          <button className="flex flex-col items-center hover:text-blue-600">
+            <img src={IconProfil} className="w-6 h-6 opacity-70" />
+            <span>Profil</span>
+          </button>
+          
+          <button className="flex flex-col items-center hover:text-blue-600">
+            <img src={IconSetting} className="w-6 h-6 opacity-70" />
+            <span>Setting</span>
+          </button>
         </nav>
         <div className="flex-1 flex justify-end gap-3">
           <button className="bg-blue-600 text-white px-5 py-2 rounded-full font-bold text-sm">Masuk</button>

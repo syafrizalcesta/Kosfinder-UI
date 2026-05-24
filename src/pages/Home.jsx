@@ -78,7 +78,18 @@ export default function Home({ onNavigate }) {
         </div>
         <nav className="order-3 md:order-2 w-full md:w-auto mt-2 md:mt-0 flex justify-evenly md:justify-center gap-2 md:gap-16 lg:gap-24 font-medium text-gray-500">
           <a href="#area-pencarian" onClick={scrollToSearch} className="flex flex-col items-center hover:text-blue-600 group cursor-pointer"><img src={IconCari} className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100" /><span className="mt-1 text-xs md:text-sm">Cari Kos</span></a>
-          <a href="#" className="flex flex-col items-center hover:text-blue-600 group cursor-pointer"><img src={IconWishlist} className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100" /><span className="mt-1 text-xs md:text-sm">Wishlist</span></a>
+          {/* SEKARANG SUDAH DI-UPDATE MENGGUNAKAN ONNAVIGATE WISHLIST */}
+          <a 
+            href="#" 
+            onClick={(e) => {
+              e.preventDefault(); // Mencegah halaman reload naik ke atas
+              onNavigate('wishlist'); // Memicu navigasi ganti halaman ke App.jsx
+            }} 
+            className="flex flex-col items-center hover:text-blue-600 group cursor-pointer"
+          >
+            <img src={IconWishlist} className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100" alt="Wishlist" />
+            <span className="mt-1 text-xs md:text-sm">Wishlist</span>
+          </a>
           <a href="#" className="flex flex-col items-center hover:text-blue-600 group cursor-pointer"><img src={IconProfil} className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100" /><span className="mt-1 text-xs md:text-sm">Profil</span></a>
           <a href="#" className="flex flex-col items-center hover:text-blue-600 group cursor-pointer"><img src={IconSetting} className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100" /><span className="mt-1 text-xs md:text-sm">Setting</span></a>
         </nav>
@@ -183,7 +194,7 @@ export default function Home({ onNavigate }) {
               {kosList.map((kos) => (
                 <div 
                   key={kos.kos_id} 
-                  onClick={() => onNavigate(kos.kos_id)} 
+                  onClick={() => onNavigate(`detail-${kos.kos_id}`)} 
                   className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer"
                 >
                   <div className="w-full h-56 md:h-64 overflow-hidden relative">
