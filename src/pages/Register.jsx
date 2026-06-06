@@ -6,22 +6,19 @@ const RegisterPencari = ({ onNavigateBack, onNavigateToLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // STATE INPUT
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [otpCode, setOtpCode] = useState('');
   const [userName, setUserName] = useState('');
   const [nomorTelepon, setNomorTelepon] = useState('');
 
   // ==========================================================
-  // TAHAP 1: VALIDASI LOKAL & KIRIM PERMINTAAN OTP KE BACKEND
+  // TAHAP 1: VALIDASI EMAIL & PASSWORD
   // ==========================================================
-  const handleStep1Submit = async (e) => {
+  const handleStep1Submit = (e) => {
     e.preventDefault();
     setErrorMessage('');
 
-    // Validasi Frontend
     if (!email.endsWith('@gmail.com')) {
       setErrorMessage('Email harus menggunakan domain @gmail.com');
       return;
@@ -35,116 +32,50 @@ const RegisterPencari = ({ onNavigateBack, onNavigateToLogin }) => {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      // Panggil API send-otp
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-otp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // Menangkap error dari Laravel (misal: email sudah dipakai)
-        throw new Error(data.message || 'Gagal mengirim email. Silakan coba lagi.');
-      }
-
-      // Jika sukses, pindah ke step 2 (Input OTP)
-      setStep(2);
-    } catch (error) {
-      setErrorMessage(error.message);
-    } finally {
-      setIsLoading(false);
-    }
+    setStep(2);
   };
 
   // ==========================================================
-  // TAHAP 2: KIRIM KODE OTP KE BACKEND UNTUK DIVERIFIKASI
+  // TAHAP 2: REGISTRASI FINAL KE DATABASE
   // ==========================================================
   const handleStep2Submit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
 
-    if (otpCode.length !== 4) {
-      setErrorMessage('Kode verifikasi harus 4 digit angka.');
+    if (nomorTelepon.length < 10) {
+      setErrorMessage('Nomor WhatsApp terlalu pendek (minimal 10 angka).');
+      return;
+    }
+    if (!nomorTelepon.startsWith('08') && !nomorTelepon.startsWith('62')) {
+      setErrorMessage('Nomor WhatsApp harus diawali dengan 08 atau 62.');
       return;
     }
 
     setIsLoading(true);
     try {
-      // Panggil API verify-otp
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/verify-otp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({ email, otp: otpCode }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // Menangkap error jika OTP salah atau kedaluwarsa
-        throw new Error(data.message || 'Kode OTP tidak valid.');
-      }
-
-      // Jika OTP benar, pindah ke step 3 (Isi Nama)
-      setStep(3);
-    } catch (error) {
-      setErrorMessage(error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // ==========================================================
-  // TAHAP 3: REGISTRASI FINAL KE DATABASE
-  // ==========================================================
-  const handleStep3Submit = async (e) => {
-    e.preventDefault();
-    setErrorMessage('');
-    setIsLoading(true);
-
-    try {
-      // Panggil API register yang sebenarnya
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify({ 
-          user_name: userName, 
-          email: email, 
-          password: password, 
+        body: JSON.stringify({
+          user_name: userName,
+          email: email,
+          password: password,
           phone_whatsapp: nomorTelepon,
-          role: 'pencari' 
+          role: 'pencari'
         }),
       });
 
       const data = await response.json();
 
-      if (nomorTelepon.length < 10) {
-        setErrorMessage('Nomor WhatsApp terlalu pendek (minimal 10 angka).');
-        return;
-      }
-      if (!nomorTelepon.startsWith('08') && !nomorTelepon.startsWith('62')) {
-        setErrorMessage('Nomor WhatsApp harus diawali dengan 08 atau 62.');
-        return;
-      }
-    
       if (!response.ok) {
         throw new Error(data.message || 'Terjadi kesalahan saat mendaftar.');
       }
 
       alert('Pendaftaran Berhasil! Silakan Login dengan akun baru Anda.');
-      onNavigateToLogin(); 
+      onNavigateToLogin();
 
     } catch (error) {
       setErrorMessage(error.message);
@@ -162,8 +93,8 @@ const RegisterPencari = ({ onNavigateBack, onNavigateToLogin }) => {
       </header>
 
       <main className="max-w-lg w-full mx-auto px-4 py-10 flex flex-col">
-        <button 
-          onClick={step === 1 ? onNavigateBack : () => setStep(step - 1)} 
+        <button
+          onClick={step === 1 ? onNavigateBack : () => setStep(step - 1)}
           className="flex items-center gap-2 text-slate-700 font-medium hover:text-blue-600 transition-colors mb-6 self-start"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
@@ -173,17 +104,13 @@ const RegisterPencari = ({ onNavigateBack, onNavigateToLogin }) => {
         </button>
 
         <div className="bg-white border border-gray-200 rounded-3xl p-8 md:p-10 shadow-sm w-full transition-all duration-300">
-          
+
           <div className="text-center mb-8">
             <h1 className="text-3xl font-extrabold text-gray-900 mb-2">
-              {step === 1 && "Daftar Akun"}
-              {step === 2 && "Verifikasi Email"}
-              {step === 3 && "Lengkapi Profil"}
+              {step === 1 ? "Daftar Akun" : "Lengkapi Profil"}
             </h1>
             <p className="text-gray-500">
-              {step === 1 && "Mulai perjalanan mencari kos impianmu"}
-              {step === 2 && `Kode 4 digit telah dikirim ke ${email}`}
-              {step === 3 && "Satu langkah lagi untuk selesai"}
+              {step === 1 ? "Mulai perjalanan mencari kos impianmu" : "Satu langkah lagi untuk selesai"}
             </p>
           </div>
 
@@ -200,8 +127,8 @@ const RegisterPencari = ({ onNavigateBack, onNavigateToLogin }) => {
             <form onSubmit={handleStep1Submit} className="space-y-5 animate-fadeIn">
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-900">Email</label>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-[#E8E8E8] text-gray-800 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -211,8 +138,8 @@ const RegisterPencari = ({ onNavigateBack, onNavigateToLogin }) => {
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-900">Password</label>
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-[#E8E8E8] text-gray-800 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -221,56 +148,29 @@ const RegisterPencari = ({ onNavigateBack, onNavigateToLogin }) => {
               </div>
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-900">Konfirmasi Password</label>
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="w-full bg-[#E8E8E8] text-gray-800 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
-              <button 
-                type="submit" 
-                disabled={isLoading}
-                className={`w-full text-white font-bold py-3.5 rounded-xl transition-colors mt-4 ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+              <button
+                type="submit"
+                className="w-full text-white font-bold py-3.5 rounded-xl transition-colors mt-4 bg-blue-600 hover:bg-blue-700"
               >
-                {isLoading ? "Mengirim Kode..." : "Daftar"}
+                Lanjutkan
               </button>
             </form>
           )}
 
           {step === 2 && (
             <form onSubmit={handleStep2Submit} className="space-y-5 animate-fadeIn">
-              <div className="space-y-2 text-center">
-                <label className="block text-sm font-semibold text-gray-900 mb-4">Masukkan Kode Verifikasi</label>
-                <input 
-                  type="text" 
-                  maxLength="4"
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))} 
-                  className="w-1/2 mx-auto bg-[#E8E8E8] text-gray-800 rounded-xl py-4 px-4 text-center text-2xl font-bold tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="0000"
-                  required
-                />
-              </div>
-              <button 
-                type="submit" 
-                disabled={isLoading}
-                className={`w-full text-white font-bold py-3.5 rounded-xl transition-colors mt-4 ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
-              >
-                {isLoading ? "Memverifikasi..." : "Verifikasi Kode"}
-              </button>
-            </form>
-          )}
-
-          {step === 3 && (
-            <form onSubmit={handleStep3Submit} className="space-y-5 animate-fadeIn">
-              
-              {/* Input Nama Lengkap */}
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-900">Nama Lengkap</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
                   className="w-full bg-[#E8E8E8] text-gray-800 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -278,22 +178,19 @@ const RegisterPencari = ({ onNavigateBack, onNavigateToLogin }) => {
                   required
                 />
               </div>
-
-              {/* 🔥 INI KOTAK INPUT NOMOR WA YANG HILANG 🔥 */}
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-gray-900">Nomor Telepon / WA</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={nomorTelepon}
-                  onChange={(e) => setNomorTelepon(e.target.value.replace(/\D/g, ''))} // Hanya angka
+                  onChange={(e) => setNomorTelepon(e.target.value.replace(/\D/g, ''))}
                   className="w-full bg-[#E8E8E8] text-gray-800 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="081234567890"
                   required
                 />
               </div>
-              
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={isLoading}
                 className={`w-full text-white font-bold py-3.5 rounded-xl transition-colors mt-4 ${isLoading ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
               >
