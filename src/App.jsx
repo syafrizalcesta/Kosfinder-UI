@@ -183,7 +183,7 @@ export default function App() {
 
       case 'verifikasi-admin':
         return (
-          <DashboardAdminVerifikasi />
+          <DashboardAdminVerifikasi onNavigate={(id) => navigateTo(id)} />
         );
       // Legacy case 'dashboard' tetap dipertahankan untuk backward compat
       case 'dashboard': 

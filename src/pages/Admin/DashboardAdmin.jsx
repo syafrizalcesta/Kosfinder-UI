@@ -342,7 +342,7 @@ function EmptyState({ message }) {
 }
 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
-export default function DashboardAdmin() {
+export default function DashboardAdmin({ onNavigate }) {
   const [users, setUsers]             = useState([]);
   const [adminUser, setAdminUser]     = useState(null);
   const [loading, setLoading]         = useState(true);
@@ -454,8 +454,17 @@ export default function DashboardAdmin() {
         },
       });
     } catch (_) {}
+    // Bersihkan seluruh sesi
     localStorage.removeItem('token');
-    window.location.href = '/login';
+    localStorage.removeItem('user');
+    localStorage.removeItem('currentPage');
+    setConfirm(null);
+    // Navigasi ke home via App.jsx router (bukan hard redirect)
+    if (onNavigate) {
+      onNavigate('home');
+    } else {
+      window.location.href = '/';
+    }
   };
 
   // ─── Filter & Stats ──
