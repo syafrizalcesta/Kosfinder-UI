@@ -159,6 +159,10 @@ const RegisterPencari = ({ onNavigateBack, onNavigateToLogin }) => {
       const data = await response.json();
 
       if (!response.ok) {
+        if (data.errors) {
+          const firstError = Object.values(data.errors)[0][0];
+          throw new Error(firstError);
+        }
         throw new Error(data.message || 'Terjadi kesalahan saat mendaftar.');
       }
 
