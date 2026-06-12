@@ -111,6 +111,7 @@ const LoginPencari = ({ onNavigateBack, onNavigateToRegister, onLoginSuccess, on
                 </svg>
                 <input 
                   type="email" 
+                  maxLength={254}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-[#E8E8E8] text-gray-800 rounded-xl py-3 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
