@@ -142,7 +142,7 @@ function LocationPickerMap({ latitude, longitude, onChange }) {
       {/* Search bar */}
       <div className="p-3 border-b border-gray-100 bg-gray-50">
         <div ref={searchRef} className="relative">
-          <form onSubmit={handleSearchSubmit} className="flex gap-2">
+          <div className="flex gap-2" onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearchSubmit(e); } }}>
             <div className="relative flex-1">
               <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                 {isSearching
@@ -153,7 +153,7 @@ function LocationPickerMap({ latitude, longitude, onChange }) {
               <input type="text" value={searchQuery} onChange={handleSearchInput} onFocus={() => suggestions.length > 0 && setShowSuggestions(true)} placeholder="Cari alamat, nama jalan, kampus, landmark..." className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all" />
               {searchQuery && <button type="button" onClick={() => { setSearchQuery(''); setSuggestions([]); setShowSuggestions(false); }} className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg></button>}
             </div>
-            <button type="submit" disabled={isSearching} className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50 flex-shrink-0">Cari</button>
+            <button type="button" onClick={handleSearchSubmit} disabled={isSearching} className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50 flex-shrink-0">Cari</button>
             <button type="button" onClick={handleGps} disabled={isGpsLoading} title="Gunakan lokasi saya" className="px-3 py-2.5 bg-white hover:bg-gray-100 border border-gray-200 text-gray-600 rounded-xl transition-colors disabled:opacity-50 flex-shrink-0 flex items-center gap-1.5">
               {isGpsLoading
                 ? <svg className="w-4 h-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
@@ -161,7 +161,7 @@ function LocationPickerMap({ latitude, longitude, onChange }) {
               }
               <span className="text-xs font-semibold hidden sm:block">{isGpsLoading ? 'Mencari...' : 'Lokasi Saya'}</span>
             </button>
-          </form>
+          </div>
           {showSuggestions && suggestions.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-[9999] max-h-60 overflow-y-auto">
               {suggestions.map((item, idx) => (
@@ -277,12 +277,10 @@ export default function KelolaKos({ onNavigateBack }) {
     }
   };
 
-  const handleDeleteKos = async (kosId) => {
-    // Tampilkan popup konfirmasi
-    if (!window.confirm('Apakah Anda yakin ingin menghapus properti ini? Data yang dihapus tidak dapat dikembalikan.')) {
-      return; 
-    }
-
+  const handleDeleteKos = (kosId) => {
+    showConfirm(
+      'Apakah Anda yakin ingin menghapus properti ini? Data yang dihapus tidak dapat dikembalikan.',
+      async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE}/kos/${kosId}`, {
@@ -305,12 +303,14 @@ export default function KelolaKos({ onNavigateBack }) {
       console.error(error);
       alert('Terjadi kesalahan jaringan.');
     }
+      }
+    );
   };
 
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
-  const handleEditKos = (kos) => {
+  const handleEditKos = async (kos) => {
     // 1. Isi form dengan data lama
     setFormData({
       kos_name: kos.kos_name,
@@ -325,11 +325,32 @@ export default function KelolaKos({ onNavigateBack }) {
       latitude: parseFloat(kos.latitude),
       longitude: parseFloat(kos.longitude),
     });
-    
-    setSelectedFacilities([]);
-    setSelectedRules([]);
+
+    // 2. Fetch data lengkap kos (fasilitas, rules, foto)
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE}/kos/${kos.kos_id}`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        const full = data.data;
+        // Fasilitas: ambil nama/id sesuai format yang dipakai selectedFacilities
+        const facs = (full.facilities || []).map(f => f.facility_name || f.name || f);
+        const rules = (full.rules || []).map(r => r.rule_name || r.name || r);
+        setSelectedFacilities(facs);
+        setSelectedRules(rules);
+      } else {
+        setSelectedFacilities([]);
+        setSelectedRules([]);
+      }
+    } catch {
+      setSelectedFacilities([]);
+      setSelectedRules([]);
+    }
     setPhotos([]);
-    // 2. Set mode edit
+
+    // 3. Set mode edit
     setIsEditing(true);
     setEditingId(kos.kos_id);
     setActiveTab('upload'); // Pindah ke tab upload
@@ -408,12 +429,26 @@ export default function KelolaKos({ onNavigateBack }) {
     e.preventDefault();
     
     // Validasi: Wajib ada foto JIKA sedang buat kos baru (Upload Baru).
-    // Jika sedang Edit, foto boleh kosong (artinya tidak ingin ganti foto).
     if (!isEditing && photos.length === 0) {
       alert('Harap unggah setidaknya 1 foto properti Anda.');
       return;
     }
 
+    // Validasi harga tidak boleh 0 atau kosong
+    const priceVal = Number(formData.price);
+    if (!formData.price || priceVal <= 0) {
+      alert('Harga sewa tidak valid. Harga harus lebih dari 0.');
+      return;
+    }
+
+    const confirmMessage = isEditing
+      ? 'Apakah Anda yakin ingin mengubah data kos ini?'
+      : 'Apakah Anda yakin ingin mempublikasikan kos ini?';
+
+    showConfirm(confirmMessage, () => doUploadSubmit());
+  };
+
+  const doUploadSubmit = async () => {
     setIsUploading(true);
 
     const formDataObj = new FormData();
@@ -580,6 +615,23 @@ export default function KelolaKos({ onNavigateBack }) {
     }
   };
 
+  // ── State: Confirmation Modal ──────────────────────────────────────────────
+  const [confirmModal, setConfirmModal] = useState(null); // { message, onConfirm }
+  // ────────────────────────────────────────────────────────────────────────────
+
+  const showConfirm = (message, onConfirm) => {
+    setConfirmModal({ message, onConfirm });
+  };
+
+  const handleConfirmYes = () => {
+    if (confirmModal?.onConfirm) confirmModal.onConfirm();
+    setConfirmModal(null);
+  };
+
+  const handleConfirmNo = () => {
+    setConfirmModal(null);
+  };
+
   // ── State: Dashboard ────────────────────────────────────────────────────
   const [dashboardStats, setDashboardStats] = useState(null);
   const [dashboardLoading, setDashboardLoading] = useState(false);
@@ -657,7 +709,7 @@ export default function KelolaKos({ onNavigateBack }) {
 
       setDashboardStats({
         pengunjung: viewsData.success ? viewsData.total : 0,
-        leads: leadsData.success ? leadsData.total : 0,
+        leads: (leadsData.success ? leadsData.total : 0) + (viewsData.success ? viewsData.total : 0) + totalReviews,
         rating: totalRating > 0 ? totalRating.toFixed(1) : '—',
         review: totalReviews,
       });
@@ -679,7 +731,39 @@ export default function KelolaKos({ onNavigateBack }) {
   return (
     <div className="min-h-screen bg-[#F8F9FA] font-sans antialiased text-gray-800">
       
-      {/* HEADER LOGO */}
+      {/* ── Confirmation Modal ─────────────────────────────────────────── */}
+      {confirmModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full border border-gray-100">
+            <div className="flex items-start gap-3 mb-5">
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+              </div>
+              <div>
+                <h4 className="font-bold text-gray-900 text-base mb-1">Konfirmasi</h4>
+                <p className="text-sm text-gray-600 leading-relaxed">{confirmModal.message}</p>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleConfirmNo}
+                className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleConfirmYes}
+                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition shadow-sm"
+              >
+                Ya, Lanjutkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="bg-white px-4 pt-3 pb-1 md:px-8 md:py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
         
         <div 
@@ -779,7 +863,7 @@ export default function KelolaKos({ onNavigateBack }) {
                   ) : (
                     <h2 className="text-4xl font-bold text-gray-900">{dashboardStats?.leads ?? '—'}</h2>
                   )}
-                  <p className="text-sm text-gray-500 mt-1 font-medium">Total Leads</p>
+                  <p className="text-sm text-gray-500 mt-1 font-medium">Total Interaksi</p>
                 </div>
 
                 {/* Rating */}
@@ -1046,7 +1130,7 @@ export default function KelolaKos({ onNavigateBack }) {
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1.5">Harga Sewa per Bulan (Rp)</label>
-                      <input type="number" name="price" value={formData.price} onChange={handleInputChange} placeholder="Contoh: 1500000" required min="0" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" />
+                      <input type="number" name="price" value={formData.price} onChange={handleInputChange} placeholder="Contoh: 1500000" required min="1" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1.5">Total Unit</label>

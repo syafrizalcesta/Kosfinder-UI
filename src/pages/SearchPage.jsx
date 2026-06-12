@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import LogoKosfinder from '../assets/Logo-Kosfinder.svg';
 import IconCari from '../assets/material-symbols-light_search.svg';
 import IconWishlist from '../assets/tdesign_heart.svg';
@@ -24,6 +24,12 @@ export default function SearchPage({ initialParams, onNavigate, onNavigateBack }
   const [filterRules, setFilterRules] = useState(() => initialParams?.rules || []);
   const [isAvailable, setIsAvailable] = useState(() => initialParams?.isAvailable || false);
 
+  // STATE GEOCODING — hasil pencarian koordinat dari Nominatim
+  const [geocodeResult, setGeocodeResult] = useState(null); // { lat, lng, displayName } | null
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const debounceTimer = useRef(null);
+  const RADIUS_KM = 3; // radius pencarian berbasis lokasi (km)
+
   // STATE AUTENTIKASI
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState('');
@@ -40,6 +46,58 @@ export default function SearchPage({ initialParams, onNavigate, onNavigateBack }
   const toggleGender = (item) => setFilterGenders(prev => prev.includes(item) ? prev.filter(g => g !== item) : [...prev, item]);
   const toggleFacility = (item) => setFilterFacilities(prev => prev.includes(item) ? prev.filter(f => f !== item) : [...prev, item]);
   const toggleRule = (item) => setFilterRules(prev => prev.includes(item) ? prev.filter(r => r !== item) : [...prev, item]);
+
+  // Hitung jarak antara dua koordinat (km) — Haversine formula
+  const hitungJarak = useCallback((lat1, lng1, lat2, lng2) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }, []);
+
+  // Debounced geocoding — hit Nominatim 600ms setelah user berhenti mengetik
+  useEffect(() => {
+    const keyword = (searchKeyword || '').trim();
+
+    // Reset geocode jika keyword kosong
+    if (!keyword) {
+      setGeocodeResult(null);
+      return;
+    }
+
+    clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(async () => {
+      setIsGeocoding(true);
+      try {
+        // Tambahkan konteks kota agar hasil lebih akurat
+        const query = encodeURIComponent(`${keyword}, Surabaya, Indonesia`);
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`,
+          { headers: { 'Accept-Language': 'id', 'User-Agent': 'KosFinder/1.0' } }
+        );
+        const data = await res.json();
+        if (data.length > 0) {
+          setGeocodeResult({
+            lat: parseFloat(data[0].lat),
+            lng: parseFloat(data[0].lon),
+            displayName: data[0].display_name,
+          });
+        } else {
+          setGeocodeResult(null);
+        }
+      } catch {
+        setGeocodeResult(null);
+      } finally {
+        setIsGeocoding(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(debounceTimer.current);
+  }, [searchKeyword]);
 
   const handleLogout = async () => {
     const token = localStorage.getItem('token');
@@ -90,10 +148,25 @@ export default function SearchPage({ initialParams, onNavigate, onNavigateBack }
   // FILTER CLIENT-SIDE
   const filteredKos = dataKos.filter((kos) => {
     const kataKunci = (searchKeyword || '').toLowerCase();
-    const matchKeyword = !kataKunci ||
-      (kos.kos_name || '').toLowerCase().includes(kataKunci) ||
-      (kos.address || '').toLowerCase().includes(kataKunci) ||
-      (kos.city || '').toLowerCase().includes(kataKunci);
+
+    let matchKeyword = true;
+    if (kataKunci) {
+      if (geocodeResult && kos.latitude && kos.longitude) {
+        // Mode lokasi — kos dalam radius RADIUS_KM dari koordinat hasil geocode
+        const jarak = hitungJarak(
+          geocodeResult.lat, geocodeResult.lng,
+          parseFloat(kos.latitude), parseFloat(kos.longitude)
+        );
+        matchKeyword = jarak <= RADIUS_KM;
+      } else {
+        // Fallback — pencarian teks biasa (nama, alamat, kota, deskripsi)
+        matchKeyword =
+          (kos.kos_name || '').toLowerCase().includes(kataKunci) ||
+          (kos.address || '').toLowerCase().includes(kataKunci) ||
+          (kos.city || '').toLowerCase().includes(kataKunci) ||
+          (kos.description || '').toLowerCase().includes(kataKunci);
+      }
+    }
 
     const matchGender = filterGenders.length === 0 || filterGenders.includes(kos.gender_type);
 
@@ -122,27 +195,27 @@ export default function SearchPage({ initialParams, onNavigate, onNavigateBack }
           </a>
         </div>
 
+        {/* BAGIAN KANAN NAVBAR */}
         <div className="order-2 md:order-3 flex justify-end md:flex-1">
           {isLoggedIn ? (
             <div className="flex items-center gap-3 md:gap-4 animate-fadeIn">
               <span className="text-sm font-medium text-gray-700 hidden sm:block">
                 Halo, <span className="font-bold text-blue-600">{userName}</span>
               </span>
+              
               {userRole === 'pemilik' && (
                 <button onClick={() => onNavigate('kelola-kos')} className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-full font-bold transition-colors text-xs md:text-sm shadow-sm flex items-center gap-1.5">
                   <svg className="w-4 h-4 hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                   Kelola Kos
                 </button>
               )}
+              
               <button onClick={() => onNavigate('profil')} className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center hover:bg-blue-200 transition overflow-hidden border-2 border-blue-200">
                 {userAvatar ? (
                   <img src={userAvatar} alt={userName} className="w-full h-full object-cover" />
                 ) : (
                   userName.charAt(0).toUpperCase()
                 )}
-              </button>
-              <button onClick={handleLogout} className="text-xs md:text-sm font-semibold text-red-500 hover:text-red-700 transition">
-                Logout
               </button>
             </div>
           ) : (
@@ -162,16 +235,21 @@ export default function SearchPage({ initialParams, onNavigate, onNavigateBack }
             <img src={IconCari} className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100 transition-opacity" alt="Cari" />
             <span className="mt-1 text-xs md:text-sm">Cari Kos</span>
           </a>
-          <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('wishlist'); }} className="flex flex-col items-center hover:text-blue-600 group cursor-pointer">
-            <img src={IconWishlist} className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100 transition-opacity" alt="Wishlist" />
+          
+          {/* MENU WISHLIST */}
+          <a href="#" onClick={(e) => { e.preventDefault(); isLoggedIn ? onNavigate('wishlist') : onNavigate('login'); }} className={`flex flex-col items-center group cursor-pointer transition-colors ${isLoggedIn ? 'hover:text-blue-600' : 'opacity-40 hover:opacity-70'}`}>
+            <img src={IconWishlist} className={`w-5 h-5 md:w-6 md:h-6 transition-opacity ${isLoggedIn ? 'opacity-70 group-hover:opacity-100' : 'opacity-50'}`} alt="Wishlist" />
             <span className="mt-1 text-xs md:text-sm">Wishlist</span>
           </a>
-          <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('riwayat'); }} className="flex flex-col items-center hover:text-blue-600 group cursor-pointer">
-            <svg className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          
+          {/* MENU RIWAYAT */}
+          <a href="#" onClick={(e) => { e.preventDefault(); isLoggedIn ? onNavigate('riwayat') : onNavigate('login'); }} className={`flex flex-col items-center group cursor-pointer transition-colors ${isLoggedIn ? 'hover:text-blue-600' : 'opacity-40 hover:opacity-70'}`}>
+            <svg className={`w-5 h-5 md:w-6 md:h-6 transition-opacity ${isLoggedIn ? 'opacity-70 group-hover:opacity-100' : 'opacity-50'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <span className="mt-1 text-xs md:text-sm">Riwayat</span>
           </a>
+          
           <button onClick={() => setSettingOpen(true)} className="flex flex-col items-center hover:text-blue-600 group cursor-pointer bg-transparent border-none outline-none">
             <img src={IconSetting} className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100 transition-opacity" alt="Setting" />
             <span className="mt-1 text-xs md:text-sm">Setting</span>
@@ -193,11 +271,34 @@ export default function SearchPage({ initialParams, onNavigate, onNavigateBack }
                 placeholder="Cari lokasi, kampus, nama kos..."
                 className="w-full px-4 py-1.5 outline-none text-sm md:text-base bg-transparent text-gray-800"
               />
+              {isGeocoding && (
+                <div className="mr-2 flex items-center gap-1 text-xs text-gray-400 shrink-0">
+                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-blue-400" />
+                  <span className="hidden sm:block">Mencari lokasi...</span>
+                </div>
+              )}
               <button onClick={() => setShowSearchPanel(false)} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-bold transition-colors hidden md:block text-sm">
                 Terapkan
               </button>
             </div>
 
+            {/* Info hasil geocode */}
+            {geocodeResult && searchKeyword && (
+              <div className="mb-3 flex items-center gap-2 text-xs text-blue-600 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <span>Menampilkan kos dalam radius <strong>{RADIUS_KM} km</strong> dari <strong>{searchKeyword}</strong></span>
+              </div>
+            )}
+            {!geocodeResult && searchKeyword && !isGeocoding && (
+              <div className="mb-3 flex items-center gap-2 text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2">
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <span>Lokasi tidak ditemukan — mencari berdasarkan teks</span>
+              </div>
+            )}
             <div className="flex flex-wrap gap-2.5">
               <div className="relative">
                 <button onClick={() => toggleDropdown('gender')} className={`px-4 py-1.5 rounded-full text-xs md:text-sm font-semibold border transition-colors shadow-sm ${filterGenders.length > 0 || openDropdown === 'gender' ? 'bg-blue-50 border-blue-400 text-blue-700' : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'}`}>
@@ -221,8 +322,8 @@ export default function SearchPage({ initialParams, onNavigate, onNavigateBack }
                 </button>
                 {openDropdown === 'price' && (
                   <div className="absolute top-full left-0 mt-2 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl p-4 z-50 flex flex-col gap-4">
-                    <div><label className="block text-xs font-semibold text-gray-500 mb-1">Min (Rp)</label><input type="number" placeholder="0" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500" /></div>
-                    <div><label className="block text-xs font-semibold text-gray-500 mb-1">Max (Rp)</label><input type="number" placeholder="2000000" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500" /></div>
+                    <div><label className="block text-xs font-semibold text-gray-500 mb-1">Min (Rp)</label><input type="number" placeholder="0" min="0" value={minPrice} onChange={(e) => { const val = e.target.value; if (val === '' || parseInt(val) >= 0) setMinPrice(val); }} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500" /></div>
+                    <div><label className="block text-xs font-semibold text-gray-500 mb-1">Max (Rp)</label><input type="number" placeholder="2000000" min="0" value={maxPrice} onChange={(e) => { const val = e.target.value; if (val === '' || parseInt(val) >= 0) setMaxPrice(val); }} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500" /></div>
                   </div>
                 )}
               </div>
@@ -270,9 +371,15 @@ export default function SearchPage({ initialParams, onNavigate, onNavigateBack }
       <main className="w-full max-w-6xl mx-auto px-4 md:px-8 mt-8 mb-20 flex-1">
         <div className="flex items-center justify-between mb-5">
           <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">
-            {searchKeyword ? `Hasil untuk "${searchKeyword}"` : 'Semua Kos'}
+            {geocodeResult && searchKeyword
+              ? `Kos dekat "${searchKeyword}"`
+              : searchKeyword
+              ? `Hasil untuk "${searchKeyword}"`
+              : 'Semua Kos'}
           </h1>
-          <span className="text-sm text-gray-500 font-medium">{filteredKos.length} kos ditemukan</span>
+          <span className="text-sm text-gray-500 font-medium">
+            {isGeocoding ? 'Mencari...' : `${filteredKos.length} kos ditemukan`}
+          </span>
         </div>
 
         {isLoading ? (

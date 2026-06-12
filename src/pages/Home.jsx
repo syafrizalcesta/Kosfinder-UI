@@ -113,6 +113,7 @@ export default function Home({ onNavigate }) {
         </div>
         
         {/* BAGIAN KANAN NAVBAR (DINAMIS) */}
+        {/* PERUBAHAN: Hapus tombol Logout dari navbar, geser avatar & kelola kos */}
         <div className="order-2 md:order-3 flex justify-end md:flex-1">
           {isLoggedIn ? (
             <div className="flex items-center gap-3 md:gap-4 animate-fadeIn">
@@ -140,13 +141,7 @@ export default function Home({ onNavigate }) {
                   userName.charAt(0).toUpperCase()
                 )}
               </button>
-
-              <button 
-                onClick={handleLogout}
-                className="text-xs md:text-sm font-semibold text-red-500 hover:text-red-700 transition"
-              >
-                Logout
-              </button>
+              {/* DIHAPUS: tombol Logout dari sini — gunakan sidebar Setting */}
             </div>
           ) : (
             <div className="flex items-center gap-2 md:gap-3">
@@ -173,13 +168,13 @@ export default function Home({ onNavigate }) {
             <span className="mt-1 text-xs md:text-sm">Cari Kos</span>
           </a>
           
-          <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('wishlist'); }} className="flex flex-col items-center hover:text-blue-600 group cursor-pointer">
-            <img src={IconWishlist} className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100 transition-opacity" alt="Wishlist" />
+          <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('wishlist'); }} className={`flex flex-col items-center group cursor-pointer transition-colors ${isLoggedIn ? 'hover:text-blue-600' : 'opacity-40 cursor-not-allowed pointer-events-none'}`}>
+            <img src={IconWishlist} className={`w-5 h-5 md:w-6 md:h-6 transition-opacity ${isLoggedIn ? 'opacity-70 group-hover:opacity-100' : 'opacity-50'}`} alt="Wishlist" />
             <span className="mt-1 text-xs md:text-sm">Wishlist</span>
           </a>
           
-          <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('riwayat'); }} className="flex flex-col items-center hover:text-blue-600 group cursor-pointer">
-            <svg className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('riwayat'); }} className={`flex flex-col items-center group cursor-pointer transition-colors ${isLoggedIn ? 'hover:text-blue-600' : 'opacity-40 cursor-not-allowed pointer-events-none'}`}>
+            <svg className={`w-5 h-5 md:w-6 md:h-6 transition-opacity ${isLoggedIn ? 'opacity-70 group-hover:opacity-100' : 'opacity-50'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <span className="mt-1 text-xs md:text-sm">Riwayat</span>
@@ -238,8 +233,9 @@ export default function Home({ onNavigate }) {
                 </button>
                 {openDropdown === 'price' && (
                   <div className="absolute top-full left-0 mt-2 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl p-4 z-50 flex flex-col gap-4">
-                    <div><label className="block text-xs font-semibold text-gray-500 mb-1">Min (Rp)</label><input type="number" placeholder="0" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500" /></div>
-                    <div><label className="block text-xs font-semibold text-gray-500 mb-1">Max (Rp)</label><input type="number" placeholder="2000000" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500" /></div>
+                    {/* PERUBAHAN: Tambah min={0} agar harga tidak bisa minus */}
+                    <div><label className="block text-xs font-semibold text-gray-500 mb-1">Min (Rp)</label><input type="number" min={0} placeholder="0" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500" /></div>
+                    <div><label className="block text-xs font-semibold text-gray-500 mb-1">Max (Rp)</label><input type="number" min={0} placeholder="2000000" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500" /></div>
                   </div>
                 )}
               </div>
@@ -297,7 +293,6 @@ export default function Home({ onNavigate }) {
                       alt={kos.kos_name} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                     />
-                    {/* Gender badge overlay on image (mobile) */}
                     <span className="absolute bottom-2 left-2 sm:hidden border border-blue-400 bg-white text-blue-600 px-2 py-0.5 rounded-full text-[9px] font-semibold">
                       {kos.gender_type}
                     </span>
@@ -306,7 +301,6 @@ export default function Home({ onNavigate }) {
                     <div className="flex justify-between items-start gap-1">
                       <div className="flex flex-col gap-0.5 sm:gap-1 min-w-0">
                         <h3 className="font-bold text-xs sm:text-sm text-gray-900 leading-tight truncate">{kos.kos_name}</h3>
-                        {/* Badge gender — hidden on mobile (shown on image instead) */}
                         <span className="hidden sm:inline-flex border border-blue-400 text-blue-600 px-2 py-0.5 rounded-full text-[10px] font-semibold w-fit">
                           {kos.gender_type}
                         </span>
@@ -337,7 +331,6 @@ export default function Home({ onNavigate }) {
                         </span>
                       )}
                     </div>
-                    {/* Rules hidden on mobile to save space */}
                     {(kos.rules || []).length > 0 && (
                       <div className="hidden sm:flex flex-wrap gap-1">
                         {(kos.rules || []).slice(0, 2).map((rule) => (
@@ -369,16 +362,13 @@ export default function Home({ onNavigate }) {
       {/* SETTING SIDEBAR OVERLAY */}
       {settingOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
-          {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setSettingOpen(false)}
           />
           
-          {/* Sidebar Panel */}
           <div className="relative w-full max-w-sm bg-[#F2F2F7] h-full overflow-y-auto shadow-2xl flex flex-col animate-slideInRight">
             
-            {/* User Header */}
             <div className="bg-white px-5 pt-12 pb-4 flex items-center justify-between border-b border-gray-200">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden border-2 border-blue-200">
@@ -408,7 +398,6 @@ export default function Home({ onNavigate }) {
 
             <div className="flex-1 px-4 py-5 space-y-6">
 
-              {/* SEKSI: Profil */}
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1 mb-2">Profil</p>
                 <div className="bg-white rounded-2xl overflow-hidden divide-y divide-gray-100 shadow-sm">
@@ -427,7 +416,6 @@ export default function Home({ onNavigate }) {
                 </div>
               </div>
 
-              {/* SEKSI: Riwayat */}
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1 mb-2">Riwayat</p>
                 <div className="bg-white rounded-2xl overflow-hidden divide-y divide-gray-100 shadow-sm">
@@ -443,7 +431,6 @@ export default function Home({ onNavigate }) {
                 </div>
               </div>
 
-              {/* SEKSI: Keamanan */}
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1 mb-2">Keamanan</p>
                 <div className="bg-white rounded-2xl overflow-hidden divide-y divide-gray-100 shadow-sm">
@@ -459,7 +446,6 @@ export default function Home({ onNavigate }) {
                 </div>
               </div>
 
-              {/* SEKSI: Bantuan */}
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1 mb-2">Bantuan</p>
                 <div className="bg-white rounded-2xl overflow-hidden divide-y divide-gray-100 shadow-sm">
@@ -475,7 +461,6 @@ export default function Home({ onNavigate }) {
                 </div>
               </div>
 
-              {/* SEKSI: Lainnya */}
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-1 mb-2">Lainnya</p>
                 <div className="bg-white rounded-2xl overflow-hidden divide-y divide-gray-100 shadow-sm">
@@ -499,7 +484,6 @@ export default function Home({ onNavigate }) {
               </div>
             </div>
 
-            {/* TOMBOL KELUAR */}
             <div className="px-4 pb-8 pt-2">
               <button
                 onClick={() => { setSettingOpen(false); handleLogout(); }}

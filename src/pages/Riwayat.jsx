@@ -87,13 +87,14 @@ export default function Riwayat({ onNavigateDetail, onNavigate }) {
           </a>
         </div>
 
-        {/* Kanan: auth-aware */}
+        {/* BAGIAN KANAN NAVBAR */}
         <div className="order-2 md:order-3 flex justify-end md:flex-1">
           {isLoggedIn ? (
             <div className="flex items-center gap-3 md:gap-4 animate-fadeIn">
               <span className="text-sm font-medium text-gray-700 hidden sm:block">
                 Halo, <span className="font-bold text-blue-600">{userName}</span>
               </span>
+
               {userRole === 'pemilik' && (
                 <button
                   onClick={() => onNavigate('kelola-kos')}
@@ -105,6 +106,7 @@ export default function Riwayat({ onNavigateDetail, onNavigate }) {
                   Kelola Kos
                 </button>
               )}
+
               <button
                 onClick={() => onNavigate('profil')}
                 className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center hover:bg-blue-200 transition overflow-hidden border-2 border-blue-200"
@@ -115,12 +117,7 @@ export default function Riwayat({ onNavigateDetail, onNavigate }) {
                   userName.charAt(0).toUpperCase()
                 )}
               </button>
-              <button
-                onClick={handleLogout}
-                className="text-xs md:text-sm font-semibold text-red-500 hover:text-red-700 transition"
-              >
-                Logout
-              </button>
+              {/* Tombol Logout dihapus dari header */}
             </div>
           ) : (
             <div className="flex items-center gap-2 md:gap-3">
@@ -146,10 +143,12 @@ export default function Riwayat({ onNavigateDetail, onNavigate }) {
             <img src={IconCari} className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100 transition-opacity" alt="Cari" />
             <span className="mt-1 text-xs md:text-sm">Cari Kos</span>
           </a>
-          <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('wishlist'); }} className="flex flex-col items-center hover:text-blue-600 group cursor-pointer">
-            <img src={IconWishlist} className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100 transition-opacity" alt="Wishlist" />
+          
+          <a href="#" onClick={(e) => { e.preventDefault(); isLoggedIn ? onNavigate('wishlist') : onNavigate('login'); }} className={`flex flex-col items-center group cursor-pointer transition-colors ${isLoggedIn ? 'hover:text-blue-600' : 'opacity-40 hover:opacity-70'}`}>
+            <img src={IconWishlist} className={`w-5 h-5 md:w-6 md:h-6 transition-opacity ${isLoggedIn ? 'opacity-70 group-hover:opacity-100' : 'opacity-50'}`} alt="Wishlist" />
             <span className="mt-1 text-xs md:text-sm">Wishlist</span>
           </a>
+          
           {/* Riwayat — aktif */}
           <div className="flex flex-col items-center text-blue-600 cursor-default select-none">
             <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,6 +156,7 @@ export default function Riwayat({ onNavigateDetail, onNavigate }) {
             </svg>
             <span className="mt-1 text-xs md:text-sm font-bold">Riwayat</span>
           </div>
+          
           <button onClick={() => setSettingOpen(true)} className="flex flex-col items-center hover:text-blue-600 group cursor-pointer bg-transparent border-none outline-none">
             <img src={IconSetting} className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100 transition-opacity" alt="Setting" />
             <span className="mt-1 text-xs md:text-sm">Setting</span>

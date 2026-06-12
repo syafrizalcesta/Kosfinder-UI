@@ -21,6 +21,11 @@ const getUserRole = () => {
   }
 };
 
+// ─── Helper: cek apakah user sedang login ─────────────────────────────────────
+const isLoggedIn = () => {
+  return !!localStorage.getItem('token') && !!localStorage.getItem('user');
+};
+
 // ─── Guard: halaman yang hanya boleh diakses role tertentu ───────────────────
 const PAGE_GUARDS = {
   'verifikasi-admin': ['admin'],
@@ -31,6 +36,9 @@ const PAGE_GUARDS = {
   'riwayat':          ['pencari', 'pemilik', 'admin'],
   'profil':           ['pencari', 'pemilik', 'admin'],
 };
+
+// ─── Halaman yang redirect ke login (bukan 403) saat belum login ─────────────
+const LOGIN_REQUIRED_PAGES = ['wishlist', 'riwayat', 'profil'];
 
 export default function App() {
   // Persist halaman terakhir: ambil dari localStorage saat pertama load
@@ -54,12 +62,20 @@ export default function App() {
   }, []);
 
   const navigateTo = (page, params = null) => {
-    // Cek guard sebelum navigasi
+    // 1. Cek apabila page butuh login, tapi user belum login
+    if (LOGIN_REQUIRED_PAGES.includes(page) && !isLoggedIn()) {
+       window.history.pushState({ page: 'login' }, '', '/login');
+       setCurrentPage('login');
+       localStorage.setItem('currentPage', 'login');
+       return;
+    }
+
+    // 2. Cek guard role sebelum navigasi
     const allowed = PAGE_GUARDS[page];
     if (allowed) {
       const role = getUserRole();
       if (!role || !allowed.includes(role)) {
-        // Tidak punya akses → arahkan ke login
+        // Tidak punya akses role → arahkan ke login
         window.history.pushState({ page: 'login' }, '', '/login');
         setCurrentPage('login');
         localStorage.setItem('currentPage', 'login');
@@ -94,8 +110,31 @@ export default function App() {
     const allowed = PAGE_GUARDS[currentPage];
     if (allowed) {
       const role = getUserRole();
-      if (!role || !allowed.includes(role)) {
-        // Hapus sisa sesi jika token tidak valid / role tidak sesuai
+      // Bila belum login atau tidak punya role yang sesuai
+      if (!isLoggedIn() || !role || !allowed.includes(role)) {
+        // Halaman yang butuh login → redirect ke login dengan pesan (tanpa 403)
+        if (LOGIN_REQUIRED_PAGES.includes(currentPage)) {
+          localStorage.removeItem('currentPage');
+          // Redirect ke login
+          setTimeout(() => {
+            window.history.replaceState({ page: 'login' }, '', '/login');
+            setCurrentPage('login');
+          }, 0);
+          return (
+            <div className="min-h-screen bg-[#F5F5F5] flex flex-col items-center justify-center gap-4">
+              <p className="text-2xl font-extrabold text-blue-500">Masuk Diperlukan</p>
+              <p className="text-gray-500 text-sm">Silakan masuk terlebih dahulu untuk mengakses halaman ini.</p>
+              <button
+                onClick={() => { setCurrentPage('login'); localStorage.setItem('currentPage', 'login'); window.history.replaceState({ page: 'login' }, '', '/login'); }}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-full font-bold text-sm transition-colors shadow-sm"
+              >
+                Masuk Sekarang
+              </button>
+            </div>
+          );
+        }
+
+        // Halaman role tertentu (admin/pemilik) tapi yang akses bukan pemilik/admin → tetap 403
         localStorage.removeItem('currentPage');
         return (
           <div className="min-h-screen bg-[#F5F5F5] flex flex-col items-center justify-center gap-4">
@@ -138,6 +177,9 @@ export default function App() {
             initialParams={searchParams} 
             onNavigate={(id, params) => {
               if (id === 'wishlist') navigateTo('wishlist'); 
+              else if (id === 'riwayat') navigateTo('riwayat');
+              else if (id === 'profil') navigateTo('profil');
+              else if (id === 'kelola-kos') navigateTo('kelola-kos');
               else if (id === 'register') navigateTo('register');
               else if (id === 'login') navigateTo('login');
               else navigateTo(id.startsWith('detail-') ? id : `detail-${id}`); 

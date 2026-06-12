@@ -455,6 +455,7 @@ export default function DetailKos({ kosId, onBack, onNavigate }) {
           </a>
         </div>
 
+        {/* BAGIAN KANAN NAVBAR */}
         <div className="order-2 md:order-3 flex justify-end md:flex-1">
           {isLoggedIn ? (
             <div className="flex items-center gap-3 md:gap-4 animate-fadeIn">
@@ -482,13 +483,6 @@ export default function DetailKos({ kosId, onBack, onNavigate }) {
                   userName.charAt(0).toUpperCase()
                 )}
               </button>
-
-              <button
-                onClick={handleLogout}
-                className="text-xs md:text-sm font-semibold text-red-500 hover:text-red-700 transition"
-              >
-                Logout
-              </button>
             </div>
           ) : (
             <div className="flex items-center gap-2 md:gap-3">
@@ -513,16 +507,21 @@ export default function DetailKos({ kosId, onBack, onNavigate }) {
             <img src={IconCari} className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100 transition-opacity" alt="Cari" />
             <span className="mt-1 text-xs md:text-sm">Cari Kos</span>
           </a>
-          <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('wishlist'); }} className="flex flex-col items-center hover:text-blue-600 group cursor-pointer">
-            <img src={IconWishlist} className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100 transition-opacity" alt="Wishlist" />
+          
+          {/* MENU WISHLIST */}
+          <a href="#" onClick={(e) => { e.preventDefault(); isLoggedIn ? onNavigate('wishlist') : onNavigate('login'); }} className={`flex flex-col items-center group cursor-pointer transition-colors ${isLoggedIn ? 'hover:text-blue-600' : 'opacity-40 hover:opacity-70'}`}>
+            <img src={IconWishlist} className={`w-5 h-5 md:w-6 md:h-6 transition-opacity ${isLoggedIn ? 'opacity-70 group-hover:opacity-100' : 'opacity-50'}`} alt="Wishlist" />
             <span className="mt-1 text-xs md:text-sm">Wishlist</span>
           </a>
-          <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('riwayat'); }} className="flex flex-col items-center hover:text-blue-600 group cursor-pointer">
-            <svg className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          
+          {/* MENU RIWAYAT */}
+          <a href="#" onClick={(e) => { e.preventDefault(); isLoggedIn ? onNavigate('riwayat') : onNavigate('login'); }} className={`flex flex-col items-center group cursor-pointer transition-colors ${isLoggedIn ? 'hover:text-blue-600' : 'opacity-40 hover:opacity-70'}`}>
+            <svg className={`w-5 h-5 md:w-6 md:h-6 transition-opacity ${isLoggedIn ? 'opacity-70 group-hover:opacity-100' : 'opacity-50'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <span className="mt-1 text-xs md:text-sm">Riwayat</span>
           </a>
+          
           <button onClick={() => setSettingOpen(true)} className="flex flex-col items-center hover:text-blue-600 group cursor-pointer bg-transparent border-none outline-none">
             <img src={IconSetting} className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100 transition-opacity" alt="Setting" />
             <span className="mt-1 text-xs md:text-sm">Setting</span>
@@ -733,14 +732,18 @@ export default function DetailKos({ kosId, onBack, onNavigate }) {
           <section ref={mapSectionRef} className="mb-8 bg-white p-5 rounded-2xl shadow-sm border border-gray-100 scroll-mt-24">
             <style>{leafletFixStyle}</style>
             <h2 className="text-lg font-bold mb-3">Lokasi di Peta</h2>
-            <div className="w-full rounded-xl border border-gray-200" style={{ height: '320px' }}>
+            <div className="relative w-full rounded-xl border border-gray-200 overflow-hidden" style={{ height: '320px' }}>
+              {/* Peta selalu dirender agar tidak muncul blank */}
               <MapContainer
                 key={`${kos.latitude}-${kos.longitude}`}
                 center={[parseFloat(kos.latitude), parseFloat(kos.longitude)]}
                 zoom={16}
                 style={{ width: '100%', height: '100%', borderRadius: '0.75rem' }}
                 scrollWheelZoom={false}
-                zoomControl={true}
+                zoomControl={isLoggedIn}
+                dragging={isLoggedIn}
+                doubleClickZoom={isLoggedIn}
+                keyboard={isLoggedIn}
               >
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -753,6 +756,30 @@ export default function DetailKos({ kosId, onBack, onNavigate }) {
                   <Popup>{kos.kos_name}</Popup>
                 </Marker>
               </MapContainer>
+
+              {/* Overlay blur + CTA jika belum login */}
+              {!isLoggedIn && (
+                <div className="absolute inset-0 z-[999] flex flex-col items-center justify-center backdrop-blur-sm bg-white/60 rounded-xl">
+                  <div className="bg-white border border-gray-200 shadow-lg rounded-2xl px-6 py-5 flex flex-col items-center gap-3 max-w-xs text-center">
+                    <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0-1.657 1.343-3 3-3s3 1.343 3 3-1.343 3-3 3-3-1.343-3-3z"/>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-800 text-sm">Masuk untuk melihat lokasi</p>
+                      <p className="text-xs text-gray-500 mt-1">Lokasi lengkap hanya tersedia untuk pengguna yang sudah masuk.</p>
+                    </div>
+                    <button
+                      onClick={() => onNavigate('login')}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 rounded-xl transition-all active:scale-95"
+                    >
+                      Masuk Sekarang
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             <p className="text-xs text-gray-400 mt-2 font-medium">
               {kos.address}, {kos.city}
@@ -1048,17 +1075,38 @@ export default function DetailKos({ kosId, onBack, onNavigate }) {
         <div className="max-w-5xl mx-auto flex gap-3">
           <button
             onClick={() => {
+              if (!isLoggedIn) {
+                onNavigate('login');
+                return;
+              }
               if (mapSectionRef.current) {
                 mapSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }
             }}
-            disabled={!kos.latitude || !kos.longitude}
-            className="w-1/2 border-2 border-blue-600 text-blue-600 font-bold py-2.5 rounded-xl transition-transform active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={isLoggedIn && (!kos.latitude || !kos.longitude)}
+            className={`w-1/2 font-bold py-2.5 rounded-xl transition-transform active:scale-95 flex items-center justify-center gap-2 ${
+              !isLoggedIn
+                ? 'border-2 border-gray-200 text-gray-400 bg-gray-100 cursor-pointer'
+                : 'border-2 border-blue-600 text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed'
+            }`}
           >
-            Lihat Lokasi
+            {!isLoggedIn ? (
+              <>
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                Lihat Lokasi
+              </>
+            ) : (
+              'Lihat Lokasi'
+            )}
           </button>
           <button
             onClick={() => {
+              if (!isLoggedIn) {
+                onNavigate('login');
+                return;
+              }
               const raw = kos.whatsapp_contact || '';
               if (!raw) {
                 alert('Nomor WhatsApp pemilik belum tersedia.');
@@ -1070,10 +1118,23 @@ export default function DetailKos({ kosId, onBack, onNavigate }) {
                 : digits;
               window.open(`https://wa.me/${normalized}`, '_blank');
             }}
-            disabled={!kos.whatsapp_contact}
-            className="w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition-all active:scale-95 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={isLoggedIn && !kos.whatsapp_contact}
+            className={`w-1/2 font-bold py-2.5 rounded-xl transition-all active:scale-95 shadow-sm flex items-center justify-center gap-2 ${
+              !isLoggedIn
+                ? 'bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-pointer'
+                : 'bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-40 disabled:cursor-not-allowed'
+            }`}
           >
-            Hubungi Pemilik
+            {!isLoggedIn ? (
+              <>
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                Hubungi Pemilik
+              </>
+            ) : (
+              'Hubungi Pemilik'
+            )}
           </button>
         </div>
       </div>

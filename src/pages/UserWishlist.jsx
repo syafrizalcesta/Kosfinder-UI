@@ -135,7 +135,7 @@ export default function UserWishlist({ onNavigateDetail, onNavigate }) {
           </a>
         </div>
 
-        {/* Kanan: auth-aware */}
+        {/* BAGIAN KANAN NAVBAR */}
         <div className="order-2 md:order-3 flex justify-end md:flex-1">
           {isLoggedIn ? (
             <div className="flex items-center gap-3 md:gap-4 animate-fadeIn">
@@ -165,13 +165,7 @@ export default function UserWishlist({ onNavigateDetail, onNavigate }) {
                   userName.charAt(0).toUpperCase()
                 )}
               </button>
-
-              <button
-                onClick={handleLogout}
-                className="text-xs md:text-sm font-semibold text-red-500 hover:text-red-700 transition"
-              >
-                Logout
-              </button>
+              {/* Tombol Logout dihapus dari header */}
             </div>
           ) : (
             <div className="flex items-center gap-2 md:gap-3">
@@ -205,8 +199,8 @@ export default function UserWishlist({ onNavigateDetail, onNavigate }) {
             <span className="mt-1 text-xs md:text-sm font-bold">Wishlist</span>
           </div>
 
-          <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('riwayat'); }} className="flex flex-col items-center hover:text-blue-600 group cursor-pointer">
-            <svg className="w-5 h-5 md:w-6 md:h-6 opacity-70 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <a href="#" onClick={(e) => { e.preventDefault(); isLoggedIn ? onNavigate('riwayat') : onNavigate('login'); }} className={`flex flex-col items-center group cursor-pointer transition-colors ${isLoggedIn ? 'hover:text-blue-600' : 'opacity-40 hover:opacity-70'}`}>
+            <svg className={`w-5 h-5 md:w-6 md:h-6 transition-opacity ${isLoggedIn ? 'opacity-70 group-hover:opacity-100' : 'opacity-50'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span className="mt-1 text-xs md:text-sm">Riwayat</span>
