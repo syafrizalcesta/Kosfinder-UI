@@ -526,15 +526,17 @@ export default function DashboardAdmin({ onNavigate }) {
       <div style={{ minHeight: '100vh', background: '#f3f4f6' }}>
 
         {/* ─── NAVBAR ─── */}
+        <style>{`
+          @media (max-width: 480px) { .admin-name-text { display: none !important; } }
+        `}</style>
         <nav style={{
           background: '#fff', borderBottom: '1px solid #e5e7eb',
-          padding: '10px 16px',
+          padding: '0 16px', height: 60, minHeight: 60,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          flexWrap: 'wrap', gap: '8px',
           position: 'sticky', top: 0, zIndex: 100,
           boxShadow: '0 1px 6px rgba(0,0,0,0.06)',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
             <div style={{
               width: 32, height: 32, borderRadius: 8,
               background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
@@ -548,11 +550,11 @@ export default function DashboardAdmin({ onNavigate }) {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
             {adminUser && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{
-                  width: 32, height: 32, borderRadius: '50%',
+                  width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
                   background: adminUser.avatar_url ? 'transparent' : 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 11, fontWeight: 700, color: '#fff', overflow: 'hidden', border: '2px solid #e5e7eb',
@@ -562,7 +564,7 @@ export default function DashboardAdmin({ onNavigate }) {
                     : (adminUser.user_name || 'A').slice(0, 2).toUpperCase()
                   }
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                <div className="admin-name-text" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: '#111827', lineHeight: 1.2 }}>{adminUser.user_name}</span>
                   <span style={{ fontSize: 11, color: '#9ca3af' }}>Administrator</span>
                 </div>
