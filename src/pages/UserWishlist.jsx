@@ -139,9 +139,6 @@ export default function UserWishlist({ onNavigateDetail, onNavigate }) {
         <div className="order-2 md:order-3 flex justify-end md:flex-1">
           {isLoggedIn ? (
             <div className="flex items-center gap-3 md:gap-4 animate-fadeIn">
-              <span className="text-sm font-medium text-gray-700 hidden sm:block">
-                Halo, <span className="font-bold text-blue-600">{userName}</span>
-              </span>
 
               {userRole === 'pemilik' && (
                 <button

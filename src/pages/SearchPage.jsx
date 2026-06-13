@@ -199,9 +199,6 @@ export default function SearchPage({ initialParams, onNavigate, onNavigateBack }
         <div className="order-2 md:order-3 flex justify-end md:flex-1">
           {isLoggedIn ? (
             <div className="flex items-center gap-3 md:gap-4 animate-fadeIn">
-              <span className="text-sm font-medium text-gray-700 hidden sm:block">
-                Halo, <span className="font-bold text-blue-600">{userName}</span>
-              </span>
               
               {userRole === 'pemilik' && (
                 <button onClick={() => onNavigate('kelola-kos')} className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-full font-bold transition-colors text-xs md:text-sm shadow-sm flex items-center gap-1.5">

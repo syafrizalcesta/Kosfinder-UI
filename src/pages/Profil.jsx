@@ -248,6 +248,46 @@ export default function Profil({ onNavigateBack }) {
   // ── Simpan profil ──
   const handleSaveProfile = async () => {
     if (!editForm.user_name.trim()) return showToast('Nama tidak boleh kosong.', 'error');
+
+    // Validasi: cek jika nomor telepon berbeda dari nomor saat ini
+    const newPhone = editForm.phone_whatsapp.trim();
+    const currentPhone = (user.phone_whatsapp || '').trim();
+
+    if (newPhone && newPhone !== currentPhone) {
+      // Format check
+      if (!/^(08|62)\d{8,12}$/.test(newPhone)) {
+        return showToast('Format nomor tidak valid. Gunakan 08xx atau 62xx.', 'error');
+      }
+
+      // Cek duplikasi nomor ke server
+      setIsSaving(true);
+      try {
+        const checkRes = await fetch(`${API_BASE}/check-phone`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({ phone_whatsapp: newPhone }),
+        });
+        const checkData = await checkRes.json();
+        if (!checkRes.ok) throw new Error(checkData.message);
+        if (checkData.exists) {
+          setIsSaving(false);
+          return showToast('Nomor WhatsApp sudah digunakan oleh akun lain.', 'error');
+        }
+      } catch (e) {
+        setIsSaving(false);
+        // Jika endpoint check-phone tidak tersedia, lanjutkan dan biarkan server menolak saat save
+        if (!e.message.includes('already') && !e.message.includes('sudah')) {
+          // Lanjut ke proses simpan, biarkan server validasi
+        } else {
+          return showToast(e.message, 'error');
+        }
+      }
+    }
+
     setIsSaving(true);
     try {
       const r = await fetch(`${API_BASE}/update-profile`, {
@@ -261,7 +301,15 @@ export default function Profil({ onNavigateBack }) {
       setUser(upd); localStorage.setItem('user', JSON.stringify(upd));
       setIsEditMode(false);
       showToast('Profil berhasil diperbarui.');
-    } catch (e) { showToast(e.message, 'error'); }
+    } catch (e) {
+      // Tangkap pesan error duplikasi nomor dari server
+      const msg = e.message.toLowerCase();
+      if (msg.includes('phone') || msg.includes('telepon') || msg.includes('whatsapp') || msg.includes('nomor')) {
+        showToast('Nomor WhatsApp sudah digunakan oleh akun lain.', 'error');
+      } else {
+        showToast(e.message, 'error');
+      }
+    }
     finally { setIsSaving(false); }
   };
 

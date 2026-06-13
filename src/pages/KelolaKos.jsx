@@ -335,20 +335,28 @@ export default function KelolaKos({ onNavigateBack }) {
       const data = await res.json();
       if (data.success && data.data) {
         const full = data.data;
-        // Fasilitas: ambil nama/id sesuai format yang dipakai selectedFacilities
-        const facs = (full.facilities || []).map(f => f.facility_name || f.name || f);
-        const rules = (full.rules || []).map(r => r.rule_name || r.name || r);
+        // Fasilitas: simpan facility_id (integer) sesuai yang dipakai checkbox
+        const facs = (full.facilities || []).map(f => f.facility_id ?? f.id).filter(Boolean);
+        const rules = (full.rules || []).map(r => r.rule_id ?? r.id).filter(Boolean);
         setSelectedFacilities(facs);
         setSelectedRules(rules);
+        // Load foto existing sebagai preview
+        const existingPhotos = (full.photos || full.images || []).map((p, idx) => {
+          const url = (p.photo_url || p.image_url || p.url || '');
+          const fullUrl = url.startsWith('http') ? url : `${import.meta.env.VITE_APP_BASE_URL}${url}`;
+          return { id: `existing-${p.photo_id || p.id || idx}`, previewUrl: fullUrl, isExisting: true, photoId: p.photo_id || p.id };
+        });
+        setPhotos(existingPhotos);
       } else {
         setSelectedFacilities([]);
         setSelectedRules([]);
+        setPhotos([]);
       }
     } catch {
       setSelectedFacilities([]);
       setSelectedRules([]);
+      setPhotos([]);
     }
-    setPhotos([]);
 
     // 3. Set mode edit
     setIsEditing(true);
@@ -367,7 +375,8 @@ export default function KelolaKos({ onNavigateBack }) {
     });
     setSelectedFacilities([]);
     setSelectedRules([]);
-    setPhotos([]);
+    // Revoke object URLs untuk foto baru agar tidak memory leak
+    setPhotos(prev => { prev.filter(p => !p.isExisting).forEach(p => URL.revokeObjectURL(p.previewUrl)); return []; });
     setActiveTab('kos-saya');
   };
 
@@ -418,10 +427,40 @@ export default function KelolaKos({ onNavigateBack }) {
     );
   };
 
-  // Fungsi untuk menangani upload foto
+  // Fungsi untuk menangani upload foto (additive — tidak menimpa foto lama)
   const handlePhotoChange = (e) => {
-    const files = Array.from(e.target.files);
-    setPhotos(files);
+    const newFiles = Array.from(e.target.files);
+    const newEntries = newFiles.map((file) => ({
+      id: `new-${Date.now()}-${Math.random()}`,
+      previewUrl: URL.createObjectURL(file),
+      isExisting: false,
+      file,
+    }));
+    setPhotos(prev => [...prev, ...newEntries]);
+    // Reset input value agar file yang sama bisa dipilih lagi
+    e.target.value = '';
+  };
+
+  // Fungsi untuk drop foto (additive)
+  const handlePhotoDrop = (e) => {
+    e.preventDefault();
+    const droppedFiles = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    const newEntries = droppedFiles.map((file) => ({
+      id: `new-${Date.now()}-${Math.random()}`,
+      previewUrl: URL.createObjectURL(file),
+      isExisting: false,
+      file,
+    }));
+    setPhotos(prev => [...prev, ...newEntries]);
+  };
+
+  // Fungsi untuk hapus foto satu per satu
+  const handleRemovePhoto = (id) => {
+    setPhotos(prev => {
+      const toRemove = prev.find(p => p.id === id);
+      if (toRemove && !toRemove.isExisting) URL.revokeObjectURL(toRemove.previewUrl);
+      return prev.filter(p => p.id !== id);
+    });
   };
 
   // Fungsi saat tombol submit ditekan
@@ -429,15 +468,16 @@ export default function KelolaKos({ onNavigateBack }) {
     e.preventDefault();
     
     // Validasi: Wajib ada foto JIKA sedang buat kos baru (Upload Baru).
-    if (!isEditing && photos.length === 0) {
+    const newPhotos = photos.filter(p => !p.isExisting && p.file);
+    if (!isEditing && newPhotos.length === 0) {
       alert('Harap unggah setidaknya 1 foto properti Anda.');
       return;
     }
 
     // Validasi harga tidak boleh 0 atau kosong
     const priceVal = Number(formData.price);
-    if (!formData.price || priceVal <= 0) {
-      alert('Harga sewa tidak valid. Harga harus lebih dari 0.');
+    if (!formData.price || priceVal < 50000) {
+      alert('Harga sewa tidak valid. Harga minimum adalah Rp 50.000.');
       return;
     }
 
@@ -467,10 +507,11 @@ export default function KelolaKos({ onNavigateBack }) {
     formDataObj.append('facilities', JSON.stringify(selectedFacilities));
     formDataObj.append('rules', JSON.stringify(selectedRules));
 
-    // Masukkan foto (jika ada)
-    if (photos.length > 0) {
-      photos.forEach((file) => {
-        formDataObj.append('images[]', file);
+    // Masukkan foto baru saja (bukan foto existing yang sudah ada di server)
+    const newPhotos = photos.filter(p => !p.isExisting && p.file);
+    if (newPhotos.length > 0) {
+      newPhotos.forEach((p) => {
+        formDataObj.append('images[]', p.file);
       });
     }
 
@@ -1130,7 +1171,7 @@ export default function KelolaKos({ onNavigateBack }) {
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1.5">Harga Sewa per Bulan (Rp)</label>
-                      <input type="number" name="price" value={formData.price} onChange={handleInputChange} placeholder="Contoh: 1500000" required min="1" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" />
+                      <input type="number" name="price" value={formData.price} onChange={handleInputChange} placeholder="Contoh: 1500000" required min="50000" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1.5">Total Unit</label>
@@ -1239,18 +1280,57 @@ export default function KelolaKos({ onNavigateBack }) {
                     <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm">4</span>
                     Foto Properti
                   </h3>
-                  <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:bg-gray-50 transition cursor-pointer relative">
-                    <input type="file" multiple accept="image/*" onChange={handlePhotoChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" required />
-                    <svg className="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    <p className="text-sm font-semibold text-gray-700">Klik atau seret foto ke sini</p>
-                    <p className="text-xs text-gray-500 mt-1">Anda bisa memilih lebih dari 1 foto sekaligus (Maks 2MB/foto)</p>
-                    
-                    {/* Tampilkan jumlah file yang dipilih */}
-                    {photos.length > 0 && (
-                      <div className="mt-4 inline-block bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1.5 rounded-full">
-                        {photos.length} foto telah dipilih
-                      </div>
-                    )}
+
+                  {/* Grid preview foto */}
+                  {photos.length > 0 && (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mb-4">
+                      {photos.map((photo) => (
+                        <div key={photo.id} className="relative group aspect-square rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-gray-100">
+                          <img
+                            src={photo.previewUrl}
+                            alt="Preview foto"
+                            className="w-full h-full object-cover"
+                          />
+                          {/* Badge: existing vs baru */}
+                          {photo.isExisting ? (
+                            <span className="absolute top-1 left-1 bg-gray-700/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">Lama</span>
+                          ) : (
+                            <span className="absolute top-1 left-1 bg-blue-600/80 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">Baru</span>
+                          )}
+                          {/* Tombol hapus */}
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePhoto(photo.id)}
+                            className="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                            title="Hapus foto ini"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"/></svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Drop zone */}
+                  <div
+                    className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center hover:bg-gray-50 transition cursor-pointer relative"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={handlePhotoDrop}
+                  >
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <svg className="mx-auto h-10 w-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <p className="text-sm font-semibold text-gray-700">Klik atau seret foto ke sini untuk menambah</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {photos.length > 0
+                        ? `${photos.length} foto (${photos.filter(p=>!p.isExisting).length} baru) — foto baru akan ditambahkan, bukan menggantikan`
+                        : 'Pilih satu atau beberapa foto (Maks 2MB/foto)'}
+                    </p>
                   </div>
                 </div>
 
