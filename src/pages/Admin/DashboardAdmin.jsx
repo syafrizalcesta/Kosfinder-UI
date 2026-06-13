@@ -528,8 +528,9 @@ export default function DashboardAdmin({ onNavigate }) {
         {/* ─── NAVBAR ─── */}
         <nav style={{
           background: '#fff', borderBottom: '1px solid #e5e7eb',
-          padding: '0 24px', height: 60,
+          padding: '10px 16px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          flexWrap: 'wrap', gap: '8px',
           position: 'sticky', top: 0, zIndex: 100,
           boxShadow: '0 1px 6px rgba(0,0,0,0.06)',
         }}>
@@ -583,7 +584,7 @@ export default function DashboardAdmin({ onNavigate }) {
         </nav>
 
         {/* ─── CONTENT ─── */}
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 24px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(16px, 4vw, 28px) clamp(12px, 4vw, 24px)' }}>
 
           {/* Page Title */}
           <div style={{ marginBottom: 22 }}>
